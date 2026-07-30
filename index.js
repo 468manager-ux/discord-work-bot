@@ -22,7 +22,6 @@ const commands = [
         .setRequired(true)
         .addChoices(
           { name: '🐣 出勤', value: 'work_start' },
-          { name: '🏁 退勤', value: 'work_end' }
           { name: '🍱 食事休憩', value: 'meal_start' },
           { name: '🚬 タバコ休憩', value: 'tobacco_start' },
           { name: '✅ 休憩から戻る', value: 'break_end' },
@@ -32,6 +31,7 @@ const commands = [
           { name: '🎯 新規AT終了', value: 'newat_end' },
           { name: '📅 8日以降AT開始', value: 'day8at_start' },
           { name: '📅 8日以降AT終了', value: 'day8at_end' },
+          { name: '🏁 退勤', value: 'work_end' }
         )
     )
 ].map(command => command.toJSON());
