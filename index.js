@@ -34,29 +34,32 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-// 起動時に特定サーバーへスラッシュコマンドを即時登録
+// 起動時にSlash Commandを登録
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
 
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-    const GUILD_ID = '1196382108868939839';
     
+    // 全サーバー共通（グローバル）にコマンドを上書き更新
     await rest.put(
-      Routes.applicationGuildCommands(client.user.id, GUILD_ID),
+      Routes.applicationCommands(client.user.id),
       { body: commands }
     );
-    console.log('スラッシュコマンドの登録が完了しました！');
+    console.log('スラッシュコマンドの再登録が完了しました！');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
   }
 });
 
-// /panel コマンドが実行された時の処理
+// /panel コマンド実行時の処理
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'panel') {
+    // 万が一処理に時間がかかっても「応答しませんでした」を出さないための処理
+    await interaction.deferReply();
+
     const selectedValue = interaction.options.getString('status');
     const userName = interaction.user.username;
     const now = new Date();
@@ -73,7 +76,7 @@ client.on(Events.InteractionCreate, async interaction => {
     else if (selectedValue === 'day8at_start') messageText = `${timeStr} ${userName}：8日以降AT開始`;
     else if (selectedValue === 'day8at_end') messageText = `${timeStr} ${userName}：8日以降AT終了`;
 
-    await interaction.reply({ content: messageText });
+    await interaction.editReply({ content: messageText });
   }
 });
 
