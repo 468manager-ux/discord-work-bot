@@ -13,24 +13,26 @@ const client = new Client({
   ]
 });
 
-// コマンドの定義
+// スラッシュコマンドの定義
 const commands = [
   new SlashCommandBuilder()
     .setName('panel')
     .setDescription('作業状況パネルを表示します')
 ].map(command => command.toJSON());
 
-// 起動時にDiscordへスラッシュコマンドを自動登録
+// 起動時に特定サーバーへスラッシュコマンドを即時登録
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
 
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     console.log('スラッシュコマンドを登録中...');
+
+    // 指定したサーバーIDに即時登録
+    const GUILD_ID = '1196382108868939839';
     
-    // 全サーバーにコマンドを登録
     await rest.put(
-      Routes.applicationCommands(client.user.id),
+      Routes.applicationGuildCommands(client.user.id, GUILD_ID),
       { body: commands }
     );
     console.log('スラッシュコマンドの登録が完了しました！');
