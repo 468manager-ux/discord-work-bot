@@ -12,9 +12,8 @@ const client = new Client({
 // 開始時刻を保持するメモリ記憶（簡易版）
 const userSessions = new Map();
 
-client.once('ready', async () => {
+client.once('ready', () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
-  await sendPanel();
 });
 
 // コマンド `/setup-panel` でパネルを出力
