@@ -67,8 +67,8 @@ client.on(Events.InteractionCreate, async interaction => {
       new ButtonBuilder().setCustomId('day8at_end').setLabel('📅 8日以降AT終了').setStyle(ButtonStyle.Danger)
     );
 
+    // テキストメッセージを出さず、ボタン（コンポーネント）のみ送信
     await interaction.reply({
-      content: '**【作業状況パネル】**\nボタンを押して記録してください。',
       components: [row1, row2, row3, row4]
     });
   }
