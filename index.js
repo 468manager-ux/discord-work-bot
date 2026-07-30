@@ -1,6 +1,9 @@
+const express = require('express');
+const app = express();
+app.get('/', (req, res) => res.send('Bot is running!'));
+app.listen(process.env.PORT || 3000);
+
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require('discord.js');
-const http = require('http');
-http.createServer((req, res) => res.end('Bot is running!')).listen(process.env.PORT || 3000);
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
