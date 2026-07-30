@@ -3,7 +3,7 @@ const app = express();
 app.get('/', (req, res) => res.send('Bot is running!'));
 app.listen(process.env.PORT || 3000);
 
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events, REST, Routes, SlashCommandBuilder } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -13,18 +13,37 @@ const client = new Client({
   ]
 });
 
-// 開始時刻を保持するメモリ記憶（簡易版）
-const userSessions = new Map();
+// コマンドの定義
+const commands = [
+  new SlashCommandBuilder()
+    .setName('panel')
+    .setDescription('作業状況パネルを表示します')
+].map(command => command.toJSON());
 
+// 起動時にDiscordへスラッシュコマンドを自動登録
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
+
+  try {
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    console.log('スラッシュコマンドを登録中...');
+    
+    // 全サーバーにコマンドを登録
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: commands }
+    );
+    console.log('スラッシュコマンドの登録が完了しました！');
+  } catch (error) {
+    console.error('コマンド登録エラー:', error);
+  }
 });
 
-// `!panel` と発言されたらパネルを出力
-client.on(Events.MessageCreate, async message => {
-  if (message.author.bot) return;
+// スラッシュコマンド（/panel）が実行された時の処理
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
 
-  if (message.content === '!panel') {
+  if (interaction.commandName === 'panel') {
     const row1 = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('meal_start').setLabel('🍱 食事休憩').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('tobacco_start').setLabel('🚬 タバコ休憩').setStyle(ButtonStyle.Primary),
@@ -46,7 +65,7 @@ client.on(Events.MessageCreate, async message => {
       new ButtonBuilder().setCustomId('day8at_end').setLabel('📅 8日以降AT終了').setStyle(ButtonStyle.Danger)
     );
 
-    await message.channel.send({
+    await interaction.reply({
       content: '**【作業状況パネル】**\nボタンを押して記録してください。',
       components: [row1, row2, row3, row4]
     });
@@ -63,12 +82,9 @@ client.on(Events.InteractionCreate, async interaction => {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
 
-  // 応答の遅延を防止
   await interaction.deferUpdate();
 
-  // 処理分岐
   if (customId.endsWith('_start')) {
-    userSessions.set(`${userId}_${customId}`, now);
     let actionName = '';
     if (customId === 'meal_start') actionName = '食事休憩';
     if (customId === 'tobacco_start') actionName = 'タバコ休憩';
