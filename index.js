@@ -7,8 +7,9 @@ const client = new Client({
 // 開始時刻を保持するメモリ記憶（簡易版）
 const userSessions = new Map();
 
-client.once(Events.ClientReady, c => {
-  console.log(`Ready! Logged in as ${c.user.tag}`);
+client.once('ready', async () => {
+  console.log(`Ready! Logged in as ${client.user.tag}`);
+  await sendPanel();
 });
 
 // コマンド `/setup-panel` でパネルを出力
