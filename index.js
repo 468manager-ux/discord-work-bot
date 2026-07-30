@@ -11,7 +11,7 @@ const client = new Client({
   ]
 });
 
-// スラッシュコマンド（/panel）の定義
+// スラッシュコマンド（/panel）の定義（出勤・退勤を含むすべての選択肢）
 const commands = [
   new SlashCommandBuilder()
     .setName('panel')
@@ -21,6 +21,8 @@ const commands = [
         .setDescription('報告するステータスを選択してください')
         .setRequired(true)
         .addChoices(
+          { name: '🐣 出勤', value: 'work_start' },
+          { name: '🏁 退勤', value: 'work_end' }
           { name: '🍱 食事休憩', value: 'meal_start' },
           { name: '🚬 タバコ休憩', value: 'tobacco_start' },
           { name: '✅ 休憩から戻る', value: 'break_end' },
@@ -29,7 +31,7 @@ const commands = [
           { name: '🎯 新規AT開始', value: 'newat_start' },
           { name: '🎯 新規AT終了', value: 'newat_end' },
           { name: '📅 8日以降AT開始', value: 'day8at_start' },
-          { name: '📅 8日以降AT終了', value: 'day8at_end' }
+          { name: '📅 8日以降AT終了', value: 'day8at_end' },
         )
     )
 ].map(command => command.toJSON());
@@ -37,45 +39,115 @@ const commands = [
 // 起動時にSlash Commandを登録
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
-
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-    
-    // 全サーバー共通（グローバル）にコマンドを上書き更新
     await rest.put(
       Routes.applicationCommands(client.user.id),
       { body: commands }
     );
-    console.log('スラッシュコマンドの再登録が完了しました！');
+    console.log('スラッシュコマンドの登録が完了しました！');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
   }
 });
+
+// GAS（スプレッドシート）へデータを送信する関数
+async function sendToGAS(dateStr, userName, statusName, messageText) {
+  const gasUrl = process.env.GAS_URL;
+  if (!gasUrl) {
+    console.error('GAS_URLが設定されていません');
+    return;
+  }
+
+  const data = {
+    date: dateStr,
+    name: userName,
+    status: statusName,
+    message: messageText
+  };
+
+  try {
+    await fetch(gasUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    console.log('GASへ送信成功:', statusName);
+  } catch (error) {
+    console.error('GAS送信エラー:', error);
+  }
+}
 
 // /panel コマンド実行時の処理
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'panel') {
-    // 万が一処理に時間がかかっても「応答しませんでした」を出さないための処理
     await interaction.deferReply();
 
     const selectedValue = interaction.options.getString('status');
     const userName = interaction.user.username;
+    
     const now = new Date();
+    const fullDateStr = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
 
     let messageText = '';
-    if (selectedValue === 'meal_start') messageText = `${timeStr} ${userName}：食事休憩開始`;
-    else if (selectedValue === 'tobacco_start') messageText = `${timeStr} ${userName}：タバコ休憩開始`;
-    else if (selectedValue === 'break_end') messageText = `${timeStr} ${userName}：休憩から戻りました`;
-    else if (selectedValue === 'chara_start') messageText = `${timeStr} ${userName}：キャラ作成開始`;
-    else if (selectedValue === 'chara_end') messageText = `${timeStr} ${userName}：キャラ作成終了`;
-    else if (selectedValue === 'newat_start') messageText = `${timeStr} ${userName}：新規AT開始`;
-    else if (selectedValue === 'newat_end') messageText = `${timeStr} ${userName}：新規AT終了`;
-    else if (selectedValue === 'day8at_start') messageText = `${timeStr} ${userName}：8日以降AT開始`;
-    else if (selectedValue === 'day8at_end') messageText = `${timeStr} ${userName}：8日以降AT終了`;
+    let statusName = '';
 
+    switch (selectedValue) {
+      case 'work_start':
+        statusName = '出勤';
+        messageText = `${timeStr} ${userName}：出勤しました`;
+        break;
+      case 'work_end':
+        statusName = '退勤';
+        messageText = `${timeStr} ${userName}：お疲れ様でした（退勤）`;
+        break;
+      case 'meal_start':
+        statusName = '食事休憩開始';
+        messageText = `${timeStr} ${userName}：食事休憩開始`;
+        break;
+      case 'tobacco_start':
+        statusName = 'タバコ休憩開始';
+        messageText = `${timeStr} ${userName}：タバコ休憩開始`;
+        break;
+      case 'break_end':
+        statusName = '休憩終了';
+        messageText = `${timeStr} ${userName}：休憩から戻りました`;
+        break;
+      case 'chara_start':
+        statusName = 'キャラ作成開始';
+        messageText = `${timeStr} ${userName}：キャラ作成開始`;
+        break;
+      case 'chara_end':
+        statusName = 'キャラ作成終了';
+        messageText = `${timeStr} ${userName}：キャラ作成終了`;
+        break;
+      case 'newat_start':
+        statusName = '新規AT開始';
+        messageText = `${timeStr} ${userName}：新規AT開始`;
+        break;
+      case 'newat_end':
+        statusName = '新規AT終了';
+        messageText = `${timeStr} ${userName}：新規AT終了`;
+        break;
+      case 'day8at_start':
+        statusName = '8日以降AT開始';
+        messageText = `${timeStr}側 ${userName}：8日以降AT開始`;
+        break;
+      case 'day8at_end':
+        statusName = '8日以降AT終了';
+        messageText = `${timeStr} ${userName}：8日以降AT終了`;
+        break;
+    }
+
+    // 1. スプレッドシート（GAS）に送信
+    sendToGAS(fullDateStr, userName, statusName, messageText);
+
+    // 2. Discordに返信
     await interaction.editReply({ content: messageText });
   }
 });
