@@ -86,7 +86,8 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'panel') {
-    await interaction.deferReply();
+    // ephemeral: true を指定することで、実行した本人にしか見えない（チャット欄に残らない）返信にする
+    await interaction.deferReply({ ephemeral: true });
 
     const selectedValue = interaction.options.getString('status');
     const userName = interaction.user.username;
@@ -137,7 +138,7 @@ client.on(Events.InteractionCreate, async interaction => {
         break;
       case 'day8at_start':
         statusName = '8日以降AT開始';
-        messageText = `${timeStr}側 ${userName}：8日以降AT開始`;
+        messageText = `${timeStr} ${userName}：8日以降AT開始`;
         break;
       case 'day8at_end':
         statusName = '8日以降AT終了';
@@ -148,7 +149,7 @@ client.on(Events.InteractionCreate, async interaction => {
     // 1. スプレッドシート（GAS）に送信
     sendToGAS(fullDateStr, userName, statusName, messageText);
 
-    // 2. 出勤・退勤の場合は、専用チャンネル（1476851793836245054）にも通知を飛ばす
+    // 2. 出勤・退勤の場合は、専用チャンネルにも通知を飛ばす
     if (selectedValue === 'work_start' || selectedValue === 'work_end') {
       const attendanceChannelId = process.env.ATTENDANCE_CHANNEL_ID;
       if (attendanceChannelId) {
@@ -163,8 +164,8 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
 
-    // 3. Discordに返信（実行した本人への通知）
-    await interaction.editReply({ content: messageText });
+    // 3. 実行した本人だけに「記録しました」とこっそり画面に表示する（チャット欄には残らない）
+    await interaction.editReply({ content: `記録しました：${messageText}` });
   }
 });
 
