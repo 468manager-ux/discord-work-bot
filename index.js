@@ -11,7 +11,7 @@ const client = new Client({
   ]
 });
 
-// スラッシュコマンド（/panel）の定義（出勤・退勤を含むすべての選択肢）
+// スラッシュコマンド（/panel）の定義
 const commands = [
   new SlashCommandBuilder()
     .setName('panel')
@@ -36,16 +36,18 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-// 起動時にSlash Commandを登録
+// 起動時にSlash Commandを登録（重複や古いゴミをリセットして1つに整理する処理）
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    
+    // グローバルコマンド（全体）の重複を綺麗にするため、一度空にしてから登録する
     await rest.put(
       Routes.applicationCommands(client.user.id),
       { body: commands }
     );
-    console.log('スラッシュコマンドの登録が完了しました！');
+    console.log('スラッシュコマンドの登録が正常に完了しました！');
   } catch (error) {
     console.error('コマンド登録エラー:', error);
   }
