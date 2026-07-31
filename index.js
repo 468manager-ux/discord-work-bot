@@ -7,7 +7,8 @@ const { Client, GatewayIntentBits, Events, REST, Routes, SlashCommandBuilder } =
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages
   ]
 });
 
@@ -36,13 +37,11 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-// 起動時にSlash Commandを登録（重複や古いゴミをリセットして1つに整理する処理）
+// 起動時にSlash Commandを登録
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-    
-    // グローバルコマンド（全体）の重複を綺麗にするため、一度空にしてから登録する
     await rest.put(
       Routes.applicationCommands(client.user.id),
       { body: commands }
@@ -149,7 +148,22 @@ client.on(Events.InteractionCreate, async interaction => {
     // 1. スプレッドシート（GAS）に送信
     sendToGAS(fullDateStr, userName, statusName, messageText);
 
-    // 2. Discordに返信
+    // 2. 出勤・退勤の場合は、専用チャンネル（1476851793836245054）にも通知を飛ばす
+    if (selectedValue === 'work_start' || selectedValue === 'work_end') {
+      const attendanceChannelId = process.env.ATTENDANCE_CHANNEL_ID;
+      if (attendanceChannelId) {
+        try {
+          const channel = await client.channels.fetch(attendanceChannelId);
+          if (channel) {
+            await channel.send(messageText);
+          }
+        } catch (err) {
+          console.error('勤怠チャンネルへの送信エラー:', err);
+        }
+      }
+    }
+
+    // 3. Discordに返信（実行した本人への通知）
     await interaction.editReply({ content: messageText });
   }
 });
