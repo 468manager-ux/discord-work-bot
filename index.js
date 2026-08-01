@@ -86,9 +86,6 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'panel') {
-    // ephemeral: true を指定することで、実行した本人にしか見えない（チャット欄に残らない）返信にする
-    await interaction.deferReply({ ephemeral: true });
-
     const selectedValue = interaction.options.getString('status');
     const userName = interaction.user.username;
     
@@ -149,8 +146,9 @@ client.on(Events.InteractionCreate, async interaction => {
     // 1. スプレッドシート（GAS）に送信
     sendToGAS(fullDateStr, userName, statusName, messageText);
 
-    // 2. 出勤・退勤の場合は、専用チャンネルにも通知を飛ばす
+    // 2. チャンネルへの通知分岐
     if (selectedValue === 'work_start' || selectedValue === 'work_end') {
+      // 出勤・退勤は専用の「#勤怠連絡」チャンネルに通知
       const attendanceChannelId = process.env.ATTENDANCE_CHANNEL_ID;
       if (attendanceChannelId) {
         try {
@@ -162,10 +160,13 @@ client.on(Events.InteractionCreate, async interaction => {
           console.error('勤怠チャンネルへの送信エラー:', err);
         }
       }
-    }
+      // 実行した本人には非公開で「記録しました」とだけ伝える
+      await interaction.reply({ content: `記録しました：${messageText}`, ephemeral: true });
 
-    // 3. 実行した本人だけに「記録しました」とこっそり画面に表示する（チャット欄には残らない）
-    await interaction.editReply({ content: `記録しました：${messageText}` });
+    } else {
+      // 休憩やAT開始などは、コマンドを実行したチャンネル（#業務連絡など）にそのまま送信して全員に見せる
+      await interaction.reply({ content: messageText });
+    }
   }
 });
 
