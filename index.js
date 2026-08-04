@@ -143,6 +143,20 @@ client.on(Events.InteractionCreate, async interaction => {
         break;
     }
 
+    // もし退勤（work_end）で、特定のユーザーだった場合はメッセージにURLを添える
+    if (selectedValue === 'work_end') {
+      let sheetUrl = '';
+      if (userName === 'h.0035') {
+        sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1072658342#gid=1072658342';
+      } else if (userName === 'nitsushi09798') {
+        sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1555584964#gid=1555584964';
+      }
+
+      if (sheetUrl) {
+        messageText = `${timeStr} ${userName}：お疲れ様でした（退勤） 勤務時間の確認はこちら→ ${sheetUrl}`;
+      }
+    }
+
     // 1. スプレッドシート（GAS）に送信
     sendToGAS(fullDateStr, userName, statusName, messageText);
 
@@ -164,7 +178,7 @@ client.on(Events.InteractionCreate, async interaction => {
       await interaction.reply({ content: `記録しました：${messageText}`, ephemeral: true });
 
     } else {
-      // 休憩やAT開始などは、コマンドを実行したチャンネル（#業務連絡など）にそのまま送信して全員に見せる
+      // 休憩やAT開始などは、コマンドを実行したチャンネルにそのまま送信して全員に見せる
       await interaction.reply({ content: messageText });
     }
   }
