@@ -86,6 +86,9 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'panel') {
+    // ★エラー防止のため、まずは3秒以内に空返信しておく
+    await interaction.deferReply({ ephemeral: true });
+
     const selectedValue = interaction.options.getString('status');
     const userName = interaction.user.username;
     
@@ -158,7 +161,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     // 1. スプレッドシート（GAS）に送信
-    sendToGAS(fullDateStr, userName, statusName, messageText);
+    await sendToGAS(fullDateStr, userName, statusName, messageText);
 
     // 2. チャンネルへの通知分岐
     if (selectedValue === 'work_start' || selectedValue === 'work_end') {
@@ -174,12 +177,16 @@ client.on(Events.InteractionCreate, async interaction => {
           console.error('勤怠チャンネルへの送信エラー:', err);
         }
       }
-      // 実行した本人には非公開で「記録しました」とだけ伝える
-      await interaction.reply({ content: `記録しました：${messageText}`, ephemeral: true });
+      // 本人への画面表示を更新
+      await interaction.editReply({ content: `記録しました：${messageText}` });
 
     } else {
-      // 休憩やAT開始などは、コマンドを実行したチャンネルにそのまま送信して全員に見せる
-      await interaction.reply({ content: messageText });
+      // 休憩やAT開始などは、コマンドを実行したチャンネルに通常メッセージとしても送信する
+      if (interaction.channel) {
+        await interaction.channel.send(messageText);
+      }
+      // 本人への画面表示を更新
+      await interaction.editReply({ content: `送信しました：${messageText}` });
     }
   }
 });
