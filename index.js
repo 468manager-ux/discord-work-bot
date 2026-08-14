@@ -136,9 +136,15 @@ client.on(Events.InteractionCreate, async interaction => {
         statusName = '新規AT終了';
         messageText = `${timeStr} ${userName}：新規AT終了`;
         break;
-      case 'day8at_start':
+case 'day8at_start':
         statusName = '8日以降AT開始';
-        messageText = `${timeStr} ${userName}：8日以降AT開始`;
+        
+        // ★押した時間から30分後の時間を計算する処理
+        const startTime = new Date(now);
+        const endTime = new Date(now.getTime() + 30 * 60000); // 30分（30×60秒×1000ミリ秒）を足す
+        const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
+        
+        messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}まで）`;
         break;
       case 'day8at_end':
         statusName = '8日以降AT終了';
