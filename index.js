@@ -144,7 +144,7 @@ case 'day8at_start':
         const endTime = new Date(now.getTime() + 30 * 60000); // 30分（30×60秒×1000ミリ秒）を足す
         const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
         
-        messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}まで）`;
+        messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}までお願いします）`;
         break;
       case 'day8at_end':
         statusName = '8日以降AT終了';
