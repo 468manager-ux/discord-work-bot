@@ -136,7 +136,7 @@ client.on(Events.InteractionCreate, async interaction => {
         statusName = '新規AT終了';
         messageText = `${timeStr} ${userName}：新規AT終了`;
         break;
-case 'day8at_start':
+      case 'day8at_start':
         statusName = '8日以降AT開始';
         
         // ★押した時間から30分後の時間を計算する処理
@@ -169,31 +169,21 @@ case 'day8at_start':
     // 1. スプレッドシート（GAS）に送信
     await sendToGAS(fullDateStr, userName, statusName, messageText);
 
-    // 2. チャンネルへの通知分岐
-    if (selectedValue === 'work_start' || selectedValue === 'work_end') {
-      // 出勤・退勤は専用の「#勤怠連絡」チャンネルに通知
-      const attendanceChannelId = process.env.ATTENDANCE_CHANNEL_ID;
-      if (attendanceChannelId) {
-        try {
-          const channel = await client.channels.fetch(attendanceChannelId);
-          if (channel) {
-            await channel.send(messageText);
-          }
-        } catch (err) {
-          console.error('勤怠チャンネルへの送信エラー:', err);
+    // 2. すべての通知を指定のチャンネル（#業務連絡など / ATTENDANCE_CHANNEL_ID）に固定して送信
+    const attendanceChannelId = process.env.ATTENDANCE_CHANNEL_ID;
+    if (attendanceChannelId) {
+      try {
+        const channel = await client.channels.fetch(attendanceChannelId);
+        if (channel) {
+          await channel.send(messageText);
         }
+      } catch (err) {
+        console.error('業務連絡チャンネルへの送信エラー:', err);
       }
-      // 本人への画面表示を更新
-      await interaction.editReply({ content: `記録しました：${messageText}` });
-
-    } else {
-      // 休憩やAT開始などは、コマンドを実行したチャンネルに通常メッセージとしても送信する
-      if (interaction.channel) {
-        await interaction.channel.send(messageText);
-      }
-      // 本人への画面表示を更新
-      await interaction.editReply({ content: `送信しました：${messageText}` });
     }
+
+    // 本人への画面表示を更新（どのチャンネルで実行しても、実行した本人には完了を通知）
+    await interaction.editReply({ content: `記録しました：${messageText}` });
   }
 });
 
