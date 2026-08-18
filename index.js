@@ -166,19 +166,26 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
 
-    // 1. スプレッドシート（GAS）に送信
+// 1. スプレッドシート（GAS）に送信
     await sendToGAS(fullDateStr, userName, statusName, messageText);
 
-    // 2. すべての通知を指定のチャンネル（#業務連絡など / ATTENDANCE_CHANNEL_ID）に固定して送信
-    const attendanceChannelId = process.env.ATTENDANCE_CHANNEL_ID;
-    if (attendanceChannelId) {
+    // 2. 通知の送信先チャンネルを振り分け
+    // 出勤・退勤は ATTENDANCE_CHANNEL_ID（#勤怠連絡）、それ以外は BUSINESS_CHANNEL_ID（#業務連絡）
+    let targetChannelId = '';
+    if (selectedValue === 'work_start' || selectedValue === 'work_end') {
+      targetChannelId = process.env.ATTENDANCE_CHANNEL_ID;
+    } else {
+      targetChannelId = process.env.BUSINESS_CHANNEL_ID;
+    }
+
+    if (targetChannelId) {
       try {
-        const channel = await client.channels.fetch(attendanceChannelId);
+        const channel = await client.channels.fetch(targetChannelId);
         if (channel) {
           await channel.send(messageText);
         }
       } catch (err) {
-        console.error('業務連絡チャンネルへの送信エラー:', err);
+        console.error('チャンネルへの送信エラー:', err);
       }
     }
 
