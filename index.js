@@ -45,9 +45,16 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
+// 接続のデバッグ用ログ
+client.on('debug', info => {
+  if (info.includes('[Login]') || info.includes('Gateway') || info.includes('heartbeat')) {
+    console.log('Discord Debug:', info);
+  }
+});
+
 // 起動時の処理
 client.once('ready', async () => {
-  console.log(`Ready! Logged in as ${client.user.tag}`);
+  console.log(`🎉【成功】readyイベントが発火しました！ Logged in as ${client.user.tag}`);
   
   // HAREサーバー専用としてスラッシュコマンドを即時登録
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
