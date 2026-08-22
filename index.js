@@ -201,8 +201,13 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 console.log('Discordへのログインを試みます...');
-client.login(process.env.DISCORD_TOKEN);
-console.log('client.loginの呼び出しが完了しました。');
+client.login(process.env.DISCORD_TOKEN)
+  .then(() => {
+    console.log('client.loginが成功しました！');
+  })
+  .catch(err => {
+    console.error('client.loginでエラーが発生しました:', err);
+  });
 
 // エラーや警告をログに出すための設定
 client.on('error', error => {
