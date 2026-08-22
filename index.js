@@ -45,18 +45,20 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-// 起動時にSlash Commandを登録
+// 起動時の処理
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
+  
+  // スラッシュコマンドをDiscordに登録
   try {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     await rest.put(
       Routes.applicationCommands(client.user.id),
       { body: commands }
     );
-    console.log('スラッシュコマンドの登録が正常に完了しました！');
+    console.log('【成功】スラッシュコマンドの登録が完了しました！');
   } catch (error) {
-    console.error('コマンド登録エラー:', error);
+    console.error('【エラー】コマンド登録時にエラーが発生しました:', error);
   }
 });
 
@@ -94,7 +96,6 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'panel') {
-    // ★エラー防止のため、まずは3秒以内に空返信しておく
     await interaction.deferReply({ ephemeral: true });
 
     const selectedValue = interaction.options.getString('status');
@@ -146,11 +147,8 @@ client.on(Events.InteractionCreate, async interaction => {
         break;
       case 'day8at_start':
         statusName = '8日以降AT開始';
-        
-        // ★押した時間から30分後の時間を計算する処理
         const endTime = new Date(now.getTime() + 30 * 60000); 
         const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
-        
         messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}まで）`;
         break;
       case 'day8at_end':
@@ -159,7 +157,6 @@ client.on(Events.InteractionCreate, async interaction => {
         break;
     }
 
-    // もし退勤（work_end）で、特定のユーザーだった場合はメッセージにURLを添える
     if (selectedValue === 'work_end') {
       let sheetUrl = '';
       if (userName === 'h.0035') {
@@ -173,10 +170,8 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
 
-    // 1. スプレッドシート（GAS）に送信
     await sendToGAS(fullDateStr, userName, statusName, messageText);
 
-    // 2. 通知の送信先チャンネルを振り分け
     let targetChannelId = '';
     if (selectedValue === 'work_start' || selectedValue === 'work_end') {
       targetChannelId = process.env.ATTENDANCE_CHANNEL_ID;
@@ -195,19 +190,9 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
 
-    // 本人への画面表示を更新
     await interaction.editReply({ content: `記録しました：${messageText}` });
   }
 });
-
-console.log('Discordへのログインを試みます...');
-client.login(process.env.DISCORD_TOKEN)
-  .then(() => {
-    console.log('client.loginが成功しました！');
-  })
-  .catch(err => {
-    console.error('client.loginでエラーが発生しました:', err);
-  });
 
 // エラーや警告をログに出すための設定
 client.on('error', error => {
@@ -216,4 +201,10 @@ client.on('error', error => {
 
 process.on('unhandledRejection', error => {
   console.error('未処理のPromise拒否:', error);
+});
+
+// 最後にDiscordへログイン
+console.log('Discordへのログインを試みます...');
+client.login(process.env.DISCORD_TOKEN).catch(err => {
+  console.error('client.loginでエラーが発生しました:', err);
 });
