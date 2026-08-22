@@ -45,18 +45,10 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-// 接続のデバッグ用ログ
-client.on('debug', info => {
-  if (info.includes('[Login]') || info.includes('Gateway') || info.includes('heartbeat')) {
-    console.log('Discord Debug:', info);
-  }
-});
-
 // 起動時の処理
 client.once('ready', async () => {
   console.log(`🎉【成功】readyイベントが発火しました！ Logged in as ${client.user.tag}`);
   
-  // HAREサーバー専用としてスラッシュコマンドを即時登録
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   
   try {
@@ -213,12 +205,10 @@ process.on('unhandledRejection', error => {
   console.error('未処理のPromise拒否:', error);
 });
 
-// 最後にDiscordへログイン
+// 最後にDiscordへログイン（タイムアウト対策）
 console.log('Discordへのログインを試みます...');
-client.login(process.env.DISCORD_TOKEN)
-  .then(() => {
-    console.log('client.loginのPromiseが正常に解決されました！');
-  })
-  .catch(err => {
+setTimeout(() => {
+  client.login(process.env.DISCORD_TOKEN).catch(err => {
     console.error('【重大なログインエラー】:', err);
   });
+}, 1000);
