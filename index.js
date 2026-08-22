@@ -1,7 +1,15 @@
 const express = require('express');
 const app = express();
-app.get('/', (req, res) => res.send('Bot is running!'));
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+
+// Renderのスリープ対策用（Webサーバーとしての応答を返す）
+app.get('/', (req, res) => {
+  res.send('Bot is running!');
+});
+
+app.listen(PORT, () => {
+  console.log(`Web server is listening on port ${PORT}`);
+});
 
 const { Client, GatewayIntentBits, Events, REST, Routes, SlashCommandBuilder } = require('discord.js');
 
@@ -140,8 +148,7 @@ client.on(Events.InteractionCreate, async interaction => {
         statusName = '8日以降AT開始';
         
         // ★押した時間から30分後の時間を計算する処理
-        const startTime = new Date(now);
-        const endTime = new Date(now.getTime() + 30 * 60000); // 30分（30×60秒×1000ミリ秒）を足す
+        const endTime = new Date(now.getTime() + 30 * 60000); 
         const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
         
         messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}まで）`;
@@ -166,11 +173,10 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
 
-// 1. スプレッドシート（GAS）に送信
+    // 1. スプレッドシート（GAS）に送信
     await sendToGAS(fullDateStr, userName, statusName, messageText);
 
     // 2. 通知の送信先チャンネルを振り分け
-    // 出勤・退勤は ATTENDANCE_CHANNEL_ID（#勤怠連絡）、それ以外は BUSINESS_CHANNEL_ID（#業務連絡）
     let targetChannelId = '';
     if (selectedValue === 'work_start' || selectedValue === 'work_end') {
       targetChannelId = process.env.ATTENDANCE_CHANNEL_ID;
@@ -189,7 +195,7 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
 
-    // 本人への画面表示を更新（どのチャンネルで実行しても、実行した本人には完了を通知）
+    // 本人への画面表示を更新
     await interaction.editReply({ content: `記録しました：${messageText}` });
   }
 });
