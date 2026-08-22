@@ -201,3 +201,12 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+// エラーや警告をログに出すための設定
+client.on('error', error => {
+  console.error('Discordクライアントエラー:', error);
+});
+
+process.on('unhandledRejection', error => {
+  console.error('未処理のPromise拒否:', error);
+});
