@@ -208,3 +208,13 @@ console.log('Discordへのログインを試みます...');
 client.login(process.env.DISCORD_TOKEN).catch(err => {
   console.error('client.loginでエラーが発生しました:', err);
 });
+
+// 最後にDiscordへログイン
+console.log('Discordへのログインを試みます...');
+client.login(process.env.DISCORD_TOKEN)
+  .then(() => {
+    console.log('client.loginのPromiseが正常に解決されました！');
+  })
+  .catch(err => {
+    console.error('【重大なログインエラー】:', err);
+  });
