@@ -2,66 +2,12 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Renderのスリープ対策用（Webサーバーとしての応答を返す）
+// JSON形式のデータを扱えるようにする
+app.use(express.json());
+
+// Renderのスリープ対策用（Webサーバーとしての応答）
 app.get('/', (req, res) => {
-  res.send('Bot is running and alive!');
-});
-
-app.listen(PORT, () => {
-  console.log(`Web server is listening on port ${PORT}`);
-});
-
-const { Client, GatewayIntentBits, Events, REST, Routes, SlashCommandBuilder } = require('discord.js');
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages
-  ]
-});
-
-// スラッシュコマンド（/panel）の定義
-const commands = [
-  new SlashCommandBuilder()
-    .setName('panel')
-    .setDescription('作業状況を記録します')
-    .addStringOption(option =>
-      option.setName('status')
-        .setDescription('報告するステータスを選択してください')
-        .setRequired(true)
-        .addChoices(
-          { name: '🐣 出勤', value: 'work_start' },
-          { name: '🍱 食事休憩', value: 'meal_start' },
-          { name: '🚬 タバコ休憩', value: 'tobacco_start' },
-          { name: '✅ 休憩から戻る', value: 'break_end' },
-          { name: '👤 キャラ作成開始', value: 'chara_start' },
-          { name: '👤 キャラ作成終了', value: 'chara_end' },
-          { name: '🎯 新規AT開始', value: 'newat_start' },
-          { name: '🎯 新規AT終了', value: 'newat_end' },
-          { name: '📅 8日以降AT開始', value: 'day8at_start' },
-          { name: '📅 8日以降AT終了', value: 'day8at_end' },
-          { name: '🏁 退勤', value: 'work_end' }
-        )
-    )
-].map(command => command.toJSON());
-
-// 起動時の処理
-client.once('ready', async () => {
-  console.log(`🎉【成功】Discordログイン＆readyイベント発火！ Logged in as ${client.user.tag}`);
-  
-  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-  
-  try {
-    const GUILD_ID = '1196382108868939839'; 
-
-    await rest.put(
-      Routes.applicationGuildCommands(client.user.id, GUILD_ID),
-      { body: commands }
-    );
-    console.log('【成功】サーバー専用のスラッシュコマンドの登録が完了しました！');
-  } catch (error) {
-    console.error('【エラー】コマンド登録時にエラーが発生しました:', error);
-  }
+  res.send('Discord Webhook Bot is running!');
 });
 
 // GAS（スプレッドシート）へデータを送信する関数
@@ -93,120 +39,124 @@ async function sendToGAS(dateStr, userName, statusName, messageText) {
   }
 }
 
-// /panel コマンド実行時の処理
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  if (interaction.commandName === 'panel') {
-    await interaction.deferReply({ ephemeral: true });
-
-    const selectedValue = interaction.options.getString('status');
-    const userName = interaction.user.username;
-    
-    const now = new Date();
-    const fullDateStr = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-    const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
-
-    let messageText = '';
-    let statusName = '';
-
-    switch (selectedValue) {
-      case 'work_start':
-        statusName = '出勤';
-        messageText = `${timeStr} ${userName}：出勤しました`;
-        break;
-      case 'work_end':
-        statusName = '退勤';
-        messageText = `${timeStr} ${userName}：お疲れ様でした（退勤）`;
-        break;
-      case 'meal_start':
-        statusName = '食事休憩開始';
-        messageText = `${timeStr} ${userName}：食事休憩開始`;
-        break;
-      case 'tobacco_start':
-        statusName = 'タバコ休憩開始';
-        messageText = `${timeStr} ${userName}：タバコ休憩開始`;
-        break;
-      case 'break_end':
-        statusName;
-        messageText = `${timeStr} ${userName}：休憩から戻りました`;
-        break;
-      case 'chara_start':
-        statusName = 'キャラ作成開始';
-        messageText = `${timeStr} ${userName}：キャラ作成開始`;
-        break;
-      case 'chara_end':
-        statusName = 'キャラ作成終了';
-        messageText = `${timeStr} ${userName}：キャラ作成終了`;
-        break;
-      case 'newat_start':
-        statusName = '新規AT開始';
-        messageText = `${timeStr} ${userName}：新規AT開始`;
-        break;
-      case 'newat_end':
-        statusName = '新規AT終了';
-        messageText = `${timeStr} ${userName}：新規AT終了`;
-        break;
-      case 'day8at_start':
-        statusName = '8日以降AT開始';
-        const endTime = new Date(now.getTime() + 30 * 60000); 
-        const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
-        messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}まで）`;
-        break;
-      case 'day8at_end':
-        statusName = '8日以降AT終了';
-        messageText = `${timeStr} ${userName}：8日以降AT終了`;
-        break;
-    }
-
-    if (selectedValue === 'work_end') {
-      let sheetUrl = '';
-      if (userName === 'h.0035') {
-        sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1072658342#gid=1072658342';
-      } else if (userName === 'nitsushi09798') {
-        sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1555584964#gid=1555584964';
-      }
-
-      if (sheetUrl) {
-        messageText = `${timeStr} ${userName}：お疲れ様でした（退勤） 勤務時間の確認はこちら→ ${sheetUrl}`;
-      }
-    }
-
-    await sendToGAS(fullDateStr, userName, statusName, messageText);
-
-    let targetChannelId = '';
-    if (selectedValue === 'work_start' || selectedValue === 'work_end') {
-      targetChannelId = process.env.ATTENDANCE_CHANNEL_ID;
-    } else {
-      targetChannelId = process.env.BUSINESS_CHANNEL_ID;
-    }
-
-    if (targetChannelId) {
-      try {
-        const channel = await client.channels.fetch(targetChannelId);
-        if (channel) {
-          await channel.send(messageText);
-        }
-      } catch (err) {
-        console.error('チャンネルへの送信エラー:', err);
-      }
-    }
-
-    await interaction.editReply({ content: `記録しました：${messageText}` });
+// DiscordのWebhookへメッセージを送信する関数
+async function sendToDiscordWebhook(webhookUrl, messageText) {
+  if (!webhookUrl) {
+    console.error('DiscordのWebhook URLが設定されていません');
+    return;
   }
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content: messageText })
+    });
+    console.log('Discord Webhookへ送信成功');
+  } catch (error) {
+    console.error('Discord Webhook送信エラー:', error);
+  }
+}
+
+// 外部（GASやボタンなど）からのリクエストを受け取るエンドポイント
+app.post('/webhook', async (req, res) => {
+  const { status, userName } = req.body;
+  
+  if (!status || !userName) {
+    return res.status(400).send('Missing status or userName');
+  }
+
+  const now = new Date();
+  const fullDateStr = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
+
+  let messageText = '';
+  let statusName = '';
+
+  switch (status) {
+    case 'work_start':
+      statusName = '出勤';
+      messageText = `${timeStr} ${userName}：出勤しました`;
+      break;
+    case 'work_end':
+      statusName = '退勤';
+      messageText = `${timeStr} ${userName}：お疲れ様でした（退勤）`;
+      break;
+    case 'meal_start':
+      statusName = '食事休憩開始';
+      messageText = `${timeStr} ${userName}：食事休憩開始`;
+      break;
+    case 'tobacco_start':
+      statusName = 'タバコ休憩開始';
+      messageText = `${timeStr} ${userName}：タバコ休憩開始`;
+      break;
+    case 'break_end':
+      statusName = '休憩終了';
+      messageText = `${timeStr} ${userName}：休憩から戻りました`;
+      break;
+    case 'chara_start':
+      statusName = 'キャラ作成開始';
+      messageText = `${timeStr} ${userName}：キャラ作成開始`;
+      break;
+    case 'chara_end':
+      statusName = 'キャラ作成終了';
+      messageText = `${timeStr} ${userName}：キャラ作成終了`;
+      break;
+    case 'newat_start':
+      statusName = '新規AT開始';
+      messageText = `${timeStr} ${userName}：新規AT開始`;
+      break;
+    case 'newat_end':
+      statusName = '新規AT終了';
+      messageText = `${timeStr} ${userName}：新規AT終了`;
+      break;
+    case 'day8at_start':
+      statusName = '8日以降AT開始';
+      const endTime = new Date(now.getTime() + 30 * 60000); 
+      const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
+      messageText = `${timeStr} ${userName}：8日以降AT開始（${endTimeStr}まで）`;
+      break;
+    case 'day8at_end':
+      statusName = '8日以降AT終了';
+      messageText = `${timeStr} ${userName}：8日以降AT終了`;
+      break;
+    default:
+      return res.status(400).send('Invalid status');
+  }
+
+  if (status === 'work_end') {
+    let sheetUrl = '';
+    if (userName === 'h.0035') {
+      sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1072658342#gid=1072658342';
+    } else if (userName === 'nitsushi09798') {
+      sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1555584964#gid=1555584964';
+    }
+
+    if (sheetUrl) {
+      messageText = `${timeStr} ${userName}：お疲れ様でした（退勤） 勤務時間の確認はこちら→ ${sheetUrl}`;
+    }
+  }
+
+  // GASへ送信
+  await sendToGAS(fullDateStr, userName, statusName, messageText);
+
+  // チャンネルに応じたWebhook URLに送信
+  let targetWebhookUrl = '';
+  if (status === 'work_start' || status === 'work_end') {
+    targetWebhookUrl = process.env.ATTENDANCE_WEBHOOK_URL;
+  } else {
+    targetWebhookUrl = process.env.BUSINESS_WEBHOOK_URL;
+  }
+
+  if (targetWebhookUrl) {
+    await sendToDiscordWebhook(targetWebhookUrl, messageText);
+  }
+
+  res.status(200).send({ success: true, message: messageText });
 });
 
-// エラーハンドリング
-client.on('error', error => {
-  console.error('Discordクライアントエラー:', error);
-});
-
-process.on('unhandledRejection', error => {
-  console.error('未処理のPromise拒否:', error);
-});
-
-// ログイン処理を確実に実行
-console.log('Discordへのログインを試みます...');
-client.login(process.env.DISCORD_TOKEN).catch(err => {
-  console.error('【重大なログインエラー】:', err);
+app.listen(PORT, () => {
+  console.log(`Webhook server is listening on port ${PORT}`);
 });
