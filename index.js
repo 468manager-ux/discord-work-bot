@@ -49,14 +49,17 @@ const commands = [
 client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
   
-  // スラッシュコマンドをDiscordに登録
+  // HAREサーバー専用としてスラッシュコマンドを即時登録
+  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+  
   try {
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    const GUILD_ID = '1196382108868939839'; 
+
     await rest.put(
-      Routes.applicationCommands(client.user.id),
+      Routes.applicationGuildCommands(client.user.id, GUILD_ID),
       { body: commands }
     );
-    console.log('【成功】スラッシュコマンドの登録が完了しました！');
+    console.log('【成功】サーバー専用のスラッシュコマンドの登録が完了しました！');
   } catch (error) {
     console.error('【エラー】コマンド登録時にエラーが発生しました:', error);
   }
@@ -201,12 +204,6 @@ client.on('error', error => {
 
 process.on('unhandledRejection', error => {
   console.error('未処理のPromise拒否:', error);
-});
-
-// 最後にDiscordへログイン
-console.log('Discordへのログインを試みます...');
-client.login(process.env.DISCORD_TOKEN).catch(err => {
-  console.error('client.loginでエラーが発生しました:', err);
 });
 
 // 最後にDiscordへログイン
