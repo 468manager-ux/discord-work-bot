@@ -4,7 +4,7 @@ const PORT = process.env.PORT || 3000;
 
 // Renderのスリープ対策用（Webサーバーとしての応答を返す）
 app.get('/', (req, res) => {
-  res.send('Bot is running!');
+  res.send('Bot is running and alive!');
 });
 
 app.listen(PORT, () => {
@@ -47,7 +47,7 @@ const commands = [
 
 // 起動時の処理
 client.once('ready', async () => {
-  console.log(`🎉【成功】readyイベントが発火しました！ Logged in as ${client.user.tag}`);
+  console.log(`🎉【成功】Discordログイン＆readyイベント発火！ Logged in as ${client.user.tag}`);
   
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   
@@ -128,7 +128,7 @@ client.on(Events.InteractionCreate, async interaction => {
         messageText = `${timeStr} ${userName}：タバコ休憩開始`;
         break;
       case 'break_end':
-        statusName = '休憩終了';
+        statusName;
         messageText = `${timeStr} ${userName}：休憩から戻りました`;
         break;
       case 'chara_start':
@@ -196,7 +196,7 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-// エラーや警告をログに出すための設定
+// エラーハンドリング
 client.on('error', error => {
   console.error('Discordクライアントエラー:', error);
 });
@@ -205,10 +205,8 @@ process.on('unhandledRejection', error => {
   console.error('未処理のPromise拒否:', error);
 });
 
-// 最後にDiscordへログイン（タイムアウト対策）
+// ログイン処理を確実に実行
 console.log('Discordへのログインを試みます...');
-setTimeout(() => {
-  client.login(process.env.DISCORD_TOKEN).catch(err => {
-    console.error('【重大なログインエラー】:', err);
-  });
-}, 1000);
+client.login(process.env.DISCORD_TOKEN).catch(err => {
+  console.error('【重大なログインエラー】:', err);
+});
