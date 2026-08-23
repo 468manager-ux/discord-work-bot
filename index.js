@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// GAS（スプレッドシート）へデータを送信する関数
+// GAS（スプレッドシート＆Discord通知）へデータを送信する関数
 async function sendToGAS(dateStr, userName, statusName, messageText) {
   const gasUrl = process.env.GAS_URL;
   if (!gasUrl) throw new Error('環境変数 GAS_URL が設定されていません');
@@ -20,21 +20,11 @@ async function sendToGAS(dateStr, userName, statusName, messageText) {
     const text = await response.text();
     throw new Error(`GAS送信失敗 (Status: ${response.status}): ${text}`);
   }
-}
 
-// DiscordのWebhookへ送信する関数
-async function sendToDiscordWebhook(webhookUrl, messageText) {
-  if (!webhookUrl) throw new Error('DiscordのWebhook URLが設定されていません');
-
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: messageText })
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Discord送信失敗 (Status: ${response.status}): ${text}`);
+  // GASからのレスポンスJSONをパース
+  const data = await response.json();
+  if (data.status !== 'success') {
+    throw new Error(`GAS処理エラー: ${data.message}`);
   }
 }
 
@@ -157,12 +147,8 @@ app.post('/webhook', async (req, res) => {
       default: return res.status(400).json({ success: false, error: '無効なステータスです' });
     }
 
-    // 1. GASへ送信
+    // すべての処理（スプレッドシート記録 ＆ Discord通知）をGASへ一任する
     await sendToGAS(fullDateStr, userName, statusName, messageText);
-
-    // 2. Discordへ送信
-    const targetWebhookUrl = (status === 'work_start' || status === 'work_end') ? process.env.ATTENDANCE_WEBHOOK_URL : process.env.BUSINESS_WEBHOOK_URL;
-    await sendToDiscordWebhook(targetWebhookUrl, messageText);
 
     return res.status(200).json({ success: true, message: messageText });
 
