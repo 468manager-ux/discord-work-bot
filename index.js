@@ -64,8 +64,8 @@ app.get('/', (req, res) => {
       <div class="user-select">
         <label for="userName">ユーザー名：</label>
         <select id="userName">
-          <option value="h.0035">h.0035</option>
-          <option value="nitsushi09798">nitsushi09798</option>
+          <option value="西谷">西谷</option>
+          <option value="伊藤">伊藤</option>
         </select>
       </div>
       <div class="grid">
@@ -111,7 +111,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// ボタンから、あるいは外部からのデータ受信エンドポイント
+// ボタンからのデータ受信エンドポイント
 app.post('/webhook', async (req, res) => {
   const { status, userName } = req.body;
   if (!status || !userName) return res.status(400).send('Missing status or userName');
@@ -128,7 +128,7 @@ app.post('/webhook', async (req, res) => {
     case 'work_end': 
       statusName = '退勤'; 
       messageText = `${timeStr} ${userName}：お疲れ様でした（退勤）`;
-      let sheetUrl = userName === 'h.0035' ? 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1072658342#gid=1072658342' : 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1555584964#gid=1555584964';
+      let sheetUrl = userName === '西谷' ? 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1072658342#gid=1072658342' : 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1555584964#gid=1555584964';
       messageText += ` 勤務時間の確認はこちら→ ${sheetUrl}`;
       break;
     case 'meal_start': statusName = '食事休憩開始'; messageText = `${timeStr} ${userName}：食事休憩開始`; break;
