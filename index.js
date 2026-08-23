@@ -37,7 +37,7 @@ async function sendToGAS(dateStr, userName, statusName, messageText) {
   }
 
   const data = await response.json();
-  if (data.status !== 'success') {
+  if (data.status !== 'success' && data.status !== 'ignored') {
     throw new Error(`GAS処理エラー: ${data.message}`);
   }
 }
@@ -58,6 +58,7 @@ app.get('/', (req, res) => {
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         button { padding: 15px; font-size: 16px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         button:active { transform: scale(0.98); }
+        button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; transform: none; }
         .btn-work { background-color: #2ecc71; grid-column: span 2; }
         .btn-break { background-color: #e67e22; }
         .btn-other { background-color: #3498db; }
@@ -91,8 +92,13 @@ app.get('/', (req, res) => {
 
       <script>
         async function sendAction(status) {
-          const userName = document.getElementById('userName').value;
+          const buttons = document.querySelectorAll('button');
           const resultDiv = document.getElementById('result');
+          
+          // 🛑 処理が完了するまで全ボタンを無効化（連打防止）
+          buttons.forEach(btn => btn.disabled = true);
+          
+          const userName = document.getElementById('userName').value;
           resultDiv.style.color = '#333';
           resultDiv.innerText = '送信中...';
 
@@ -113,6 +119,11 @@ app.get('/', (req, res) => {
           } catch (err) {
             resultDiv.style.color = '#e74c3c';
             resultDiv.innerText = '❌ 通信エラーが発生しました';
+          } finally {
+            // 🔄 処理が終わったら（成功・失敗問わず）3秒後にボタンを再び押せるようにする
+            setTimeout(() => {
+              buttons.forEach(btn => btn.disabled = false);
+            }, 3000);
           }
         }
       </script>
