@@ -5,6 +5,22 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// --- パスワード認証（HTTPベーシック認証） ---
+app.use((req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+    const user = auth[0];
+    const pass = auth[1];
+    if (user === 'hare' && pass === '1020') {
+      return next();
+    }
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Protected Area"');
+  res.status(401).send('認証が必要です');
+});
+// ------------------------------------------
+
 async function sendToGAS(dateStr, userName, statusName, messageText) {
   const gasUrl = process.env.GAS_URL;
   if (!gasUrl) throw new Error('環境変数 GAS_URL が設定されていません');
@@ -132,7 +148,7 @@ app.post('/webhook', async (req, res) => {
       case 'chara_start': statusName = 'キャラ作成開始'; messageText = `${timeStr} ${userName}：キャラ作成開始`; break;
       case 'chara_end': statusName = 'キャラ作成終了'; messageText = `${timeStr} ${userName}：キャラ作成終了`; break;
       case 'newat_start': statusName = '新規AT開始'; messageText = `${timeStr} ${userName}：新規AT開始`; break;
-      case 'newat_end': statusName = '新規AT終了'; messageText = `${timeStr} ${userName}：新規AT終了`; break;
+      case 'newat_end': statusName = '新規AT終了'; messageText = `${timeStr} ${userName} : 新規AT終了`; break;
       case 'day8at_start': 
         statusName = '8日以降AT開始';
         const endTime = new Date(now.getTime() + 30 * 60000);
