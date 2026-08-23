@@ -71,6 +71,7 @@ app.get('/', (req, res) => {
         <select id="userName">
           <option value="西谷">西谷</option>
           <option value="伊藤">伊藤</option>
+          <option value="テスト">テスト</option>
         </select>
       </div>
       <div class="grid">
