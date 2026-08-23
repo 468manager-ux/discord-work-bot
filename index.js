@@ -5,7 +5,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// GAS（スプレッドシート＆Discord通知）へデータを送信する関数
 async function sendToGAS(dateStr, userName, statusName, messageText) {
   const gasUrl = process.env.GAS_URL;
   if (!gasUrl) throw new Error('環境変数 GAS_URL が設定されていません');
@@ -21,14 +20,12 @@ async function sendToGAS(dateStr, userName, statusName, messageText) {
     throw new Error(`GAS送信失敗 (Status: ${response.status}): ${text}`);
   }
 
-  // GASからのレスポンスJSONをパース
   const data = await response.json();
   if (data.status !== 'success') {
     throw new Error(`GAS処理エラー: ${data.message}`);
   }
 }
 
-// ブラウザ用の操作画面（ボタンページ）を表示
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -107,7 +104,6 @@ app.get('/', (req, res) => {
   `);
 });
 
-// ボタンからのデータ受信エンドポイント
 app.post('/webhook', async (req, res) => {
   try {
     const { status, userName } = req.body;
@@ -147,7 +143,6 @@ app.post('/webhook', async (req, res) => {
       default: return res.status(400).json({ success: false, error: '無効なステータスです' });
     }
 
-    // すべての処理（スプレッドシート記録 ＆ Discord通知）をGASへ一任する
     await sendToGAS(fullDateStr, userName, statusName, messageText);
 
     return res.status(200).json({ success: true, message: messageText });
