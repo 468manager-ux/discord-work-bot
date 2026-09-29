@@ -79,7 +79,7 @@ app.get('/', (req, res) => {
         <button class="btn-work" onclick="sendAction('work_start')">🟢 出勤</button>
         <button class="btn-work" onclick="sendAction('work_end')">🔴 退勤</button>
         <button class="btn-break" onclick="sendAction('meal_start')">🍱 食事休憩開始</button>
-        <button class="btn-break" onclick="sendAction('tobacco_start')">🚬 タバコ休憩</button>
+        <button class="btn-break" onclick="sendAction('tobacco_start')">🚬 タバコ休憩開始</button>
         <button class="btn-break" onclick="sendAction('break_end')" style="grid-column: span 2;">🔙 休憩終了</button>
         <button class="btn-other" onclick="sendAction('chara_start')">🎨 キャラ作成開始</button>
         <button class="btn-other" onclick="sendAction('chara_end')">🏁 キャラ作成終了</button>
