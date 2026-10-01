@@ -61,6 +61,7 @@ app.get('/', (req, res) => {
         button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; transform: none; }
         .btn-work { background-color: #2ecc71; grid-column: span 2; }
         .btn-break { background-color: #e67e22; }
+        .btn-private { background-color: #8e44ad; }
         .btn-other { background-color: #3498db; }
         #result { margin-top: 20px; text-align: center; font-weight: bold; }
       </style>
@@ -81,6 +82,8 @@ app.get('/', (req, res) => {
         <button class="btn-break" onclick="sendAction('meal_start')">🍱 食事休憩開始</button>
         <button class="btn-break" onclick="sendAction('tobacco_start')">🚬 タバコ休憩開始</button>
         <button class="btn-break" onclick="sendAction('break_end')" style="grid-column: span 2;">🔙 休憩終了</button>
+        <button class="btn-private" onclick="sendAction('private_start')">🏃 私用退出</button>
+        <button class="btn-private" onclick="sendAction('private_end')">🟢 私用戻り</button>
         <button class="btn-other" onclick="sendAction('chara_start')">🎨 キャラ作成開始</button>
         <button class="btn-other" onclick="sendAction('chara_end')">🏁 キャラ作成終了</button>
         <button class="btn-other" onclick="sendAction('newat_start')">⚡ 新規AT開始</button>
@@ -95,7 +98,6 @@ app.get('/', (req, res) => {
           const buttons = document.querySelectorAll('button');
           const resultDiv = document.getElementById('result');
           
-          // 🛑 処理が完了するまで全ボタンを無効化（連打防止）
           buttons.forEach(btn => btn.disabled = true);
           
           const userName = document.getElementById('userName').value;
@@ -120,7 +122,6 @@ app.get('/', (req, res) => {
             resultDiv.style.color = '#e74c3c';
             resultDiv.innerText = '❌ 通信エラーが発生しました';
           } finally {
-            // 🔄 処理が終わったら（成功・失敗問わず）3秒後にボタンを再び押せるようにする
             setTimeout(() => {
               buttons.forEach(btn => btn.disabled = false);
             }, 3000);
@@ -148,16 +149,17 @@ app.post('/webhook', async (req, res) => {
 
     switch (status) {
       case 'work_start': statusName = '出勤'; messageText = `${timeStr} ${userName}：出勤しました`; break;
-case 'work_end': 
+      case 'work_end': 
         statusName = '退勤'; 
         messageText = `${timeStr} ${userName}：お疲れ様でした（退勤）`;
-        // 全員共通のシートURLを指定する
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit';
         messageText += ` 勤務時間の確認はこちら→ ${sheetUrl}`;
         break;
       case 'meal_start': statusName = '食事休憩開始'; messageText = `${timeStr} ${userName}：食事休憩開始`; break;
       case 'tobacco_start': statusName = 'タバコ休憩開始'; messageText = `${timeStr} ${userName}：タバコ休憩開始`; break;
       case 'break_end': statusName = '休憩終了'; messageText = `${timeStr} ${userName}：休憩から戻りました`; break;
+      case 'private_start': statusName = '私用退出'; messageText = `${timeStr} ${userName}：私用退出`; break;
+      case 'private_end': statusName = '私用戻り'; messageText = `${timeStr} ${userName}：私用戻り`; break;
       case 'chara_start': statusName = 'キャラ作成開始'; messageText = `${timeStr} ${userName}：キャラ作成開始`; break;
       case 'chara_end': statusName = 'キャラ作成終了'; messageText = `${timeStr} ${userName}：キャラ作成終了`; break;
       case 'newat_start': statusName = '新規AT開始'; messageText = `${timeStr} ${userName}：新規AT開始`; break;
