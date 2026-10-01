@@ -148,10 +148,11 @@ app.post('/webhook', async (req, res) => {
 
     switch (status) {
       case 'work_start': statusName = '出勤'; messageText = `${timeStr} ${userName}：出勤しました`; break;
-      case 'work_end': 
+case 'work_end': 
         statusName = '退勤'; 
         messageText = `${timeStr} ${userName}：お疲れ様でした（退勤）`;
-        let sheetUrl = userName === '西谷' ? 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1072658342#gid=1072658342' : 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit?gid=1555584964#gid=1555584964';
+        // 全員共通のシートURLを指定する
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/1wW1B9HZRxyfFHglTGeAY3Ef8JEqfV04zSDq-G4fHuDo/edit';
         messageText += ` 勤務時間の確認はこちら→ ${sheetUrl}`;
         break;
       case 'meal_start': statusName = '食事休憩開始'; messageText = `${timeStr} ${userName}：食事休憩開始`; break;
