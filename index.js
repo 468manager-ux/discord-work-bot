@@ -21,14 +21,21 @@ app.use((req, res, next) => {
 });
 // ------------------------------------------
 
-async function sendToGAS(dateStr, userName, statusName, messageText) {
+async function sendToGAS(dateStr, userName, statusName, messageText, userAgent) {
   const gasUrl = process.env.GAS_URL;
   if (!gasUrl) throw new Error('環境変数 GAS_URL が設定されていません');
 
   const response = await fetch(gasUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date: dateStr, name: userName, status: statusName, message: messageText })
+    // userAgentもGAS側に送信するように追加
+    body: JSON.stringify({ 
+      date: dateStr, 
+      name: userName, 
+      status: statusName, 
+      message: messageText,
+      userAgent: userAgent 
+    })
   });
 
   if (!response.ok) {
@@ -101,6 +108,9 @@ app.get('/', (req, res) => {
           buttons.forEach(btn => btn.disabled = true);
           
           const userName = document.getElementById('userName').value;
+          // ブラウザのUser-Agentを取得
+          const userAgent = navigator.userAgent;
+
           resultDiv.style.color = '#333';
           resultDiv.innerText = '送信中...';
 
@@ -108,7 +118,7 @@ app.get('/', (req, res) => {
             const res = await fetch('/webhook', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status, userName })
+              body: JSON.stringify({ status, userName, userAgent })
             });
             const data = await res.json();
             if (res.ok && data.success) {
@@ -135,10 +145,16 @@ app.get('/', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
   try {
-    const { status, userName } = req.body;
+    const { status, userName, userAgent: clientUserAgent } = req.body;
     if (!status || !userName) {
       return res.status(400).json({ success: false, error: 'ステータスまたはユーザー名がありません' });
     }
+
+    // サーバー側でもアクセス元のヘッダーから取得できるようにバックアップとして保持
+    const userAgent = clientUserAgent || req.headers['user-agent'] || '不明';
+
+    // Renderのサーバーログに出力する（これでRenderのログ画面で確認できるようになります）
+    console.log(`[打刻ログ] ユーザー: ${userName}, ステータス: ${status}, UA: ${userAgent}`);
 
     const now = new Date();
     const fullDateStr = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
@@ -156,7 +172,7 @@ app.post('/webhook', async (req, res) => {
         messageText += ` 勤務時間の確認はこちら→ ${sheetUrl}`;
         break;
       case 'meal_start': statusName = '食事休憩開始'; messageText = `${timeStr} ${userName}：食事休憩開始`; break;
-      case 'tobacco_start': statusName = 'タバコ休憩開始'; messageText = `${timeStr} ${userName}：タバコ休憩開始`; break;
+      case 'tobacco_start': statusName; statusName = 'タバコ休憩開始'; messageText = `${timeStr} ${userName}：タバコ休憩開始`; break;
       case 'break_end': statusName = '休憩終了'; messageText = `${timeStr} ${userName}：休憩から戻りました`; break;
       case 'private_start': statusName = '私用退出'; messageText = `${timeStr} ${userName}：私用退出`; break;
       case 'private_end': statusName = '私用戻り'; messageText = `${timeStr} ${userName}：私用戻り`; break;
@@ -174,11 +190,12 @@ app.post('/webhook', async (req, res) => {
       default: return res.status(400).json({ success: false, error: '無効なステータスです' });
     }
 
-    await sendToGAS(fullDateStr, userName, statusName, messageText);
+    // GASへ送信する関数に userAgent を渡す
+    await sendToGAS(fullDateStr, userName, statusName, messageText, userAgent);
 
     return res.status(200).json({ success: true, message: messageText });
 
-  } catch (err) {
+  } `catch` (err) {
     console.error('Webhook処理エラー:', err.message);
     return res.status(500).json({ success: false, error: err.message });
   }
